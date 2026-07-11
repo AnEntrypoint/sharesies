@@ -87,6 +87,36 @@ test('new client is synced to the current PTY size on join', async () => {
   session.destroy()
 })
 
+test('a late-joining client triggers a real PTY nudge-resize so full-screen apps redraw', async () => {
+  const session = new SharedSession({ command: 'sh', ptyFactory: makeMockPty })
+  await session.start()
+  session.pty.resizes.length = 0 // clear the resize from spawn options
+
+  const a = makeClient()
+  session.addClient(a)
+
+  // Nudged down then back to the original size — full-screen apps (vim,
+  // htop, less) treat any SIGWINCH as "redraw", so the exact intermediate
+  // value only needs to differ, then settle back to the real size.
+  assert.equal(session.pty.resizes.length, 2)
+  assert.deepEqual(session.pty.resizes[1], [80, 24])
+  assert.notDeepEqual(session.pty.resizes[0], session.pty.resizes[1])
+  session.destroy()
+})
+
+test('nudge-resize on join never shrinks below 1 column', async () => {
+  const session = new SharedSession({ command: 'sh', ptyFactory: makeMockPty })
+  session.width = 1
+  await session.start()
+  session.pty.resizes.length = 0
+
+  const a = makeClient()
+  session.addClient(a)
+
+  assert.ok(session.pty.resizes.every(([w]) => w >= 1))
+  session.destroy()
+})
+
 test('app exit broadcasts exit code once and fires onAppExit exactly once', async () => {
   const session = new SharedSession({ command: 'sh', ptyFactory: makeMockPty })
   await session.start()

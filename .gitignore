@@ -10,3 +10,4 @@ Thumbs.db
 .gm/pw-sock-*/
 web/bundle.js
 web/bundle.js.map
+*.swp

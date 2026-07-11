@@ -49,18 +49,37 @@ await page.waitForFunction(
   { timeout: 30000 }
 ).catch((e) => { ok = false; console.log('[test] FAILED waiting for connected status:', e.message) })
 
+// xterm renders to <canvas>, so DOM text is not a valid read of terminal
+// content — use the real buffer API exposed as window.__sharesiesTerm.
+const readTerminalText = () => page.evaluate(() => {
+  const term = window.__sharesiesTerm
+  if (!term) return ''
+  const buf = term.buffer.active
+  const lines = []
+  for (let i = 0; i < buf.length; i++) lines.push(buf.getLine(i)?.translateToString(true) ?? '')
+  return lines.join('\n')
+})
+
 if (ok) {
   console.log('[test] browser status = ok (WebRTC peer connected)')
   await page.keyboard.type('echo BROWSER_E2E_MARKER')
   await page.keyboard.press('Enter')
 
   ok = await page.waitForFunction(
-    () => document.querySelector('#terminal .xterm-rows')?.innerText.includes('BROWSER_E2E_MARKER'),
+    () => {
+      const term = window.__sharesiesTerm
+      if (!term) return false
+      const buf = term.buffer.active
+      for (let i = 0; i < buf.length; i++) {
+        if (buf.getLine(i)?.translateToString(true).includes('BROWSER_E2E_MARKER')) return true
+      }
+      return false
+    },
     { timeout: 15000 }
   ).then(() => true).catch(() => false)
 }
 
-const termText = await page.evaluate(() => document.querySelector('#terminal .xterm-rows')?.innerText || '').catch(() => '')
+const termText = await readTerminalText().catch(() => '')
 console.log('[test] terminal text sample:', JSON.stringify(termText.slice(-300)))
 console.log(ok ? '[RESULT] PASS — real Chromium client rendered live PTY output over WebRTC' : '[RESULT] FAIL')
 

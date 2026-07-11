@@ -85,11 +85,16 @@ export async function runServer(opts = {}) {
   })
 
   await server.listen(keyPair)
-  session.start()
 
   const publicKey = HypercoreId.encode(keyPair.publicKey)
   const showCommand = (c) => `npx sharesies --connect ${seed}`
 
+  // Spawn the PTY only once every transport that should receive its initial
+  // draw is ready to accept connections. A late-joining client only ever
+  // sees the *live* stream (no replay/history), so if the PTY started first,
+  // anyone still negotiating a connection — RTC's ICE handshake in
+  // particular routinely takes seconds — would silently miss the app's
+  // startup screen.
   let rtc = null
   if (opts.web) {
     try {
@@ -98,6 +103,8 @@ export async function runServer(opts = {}) {
       console.error('sharesies: --web failed to start RTC transport: ' + (err && err.message ? err.message : err))
     }
   }
+
+  session.start()
 
   const webBase = opts.webBase || 'https://anentrypoint.github.io/sharesies/'
   const showWebUrl = () => `${webBase}#${seed}`

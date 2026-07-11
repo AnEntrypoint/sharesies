@@ -87,6 +87,17 @@ export class SharedSession {
     this.clients.add(client)
     // Bring the newly joined client's terminal in sync with the live PTY size.
     this._sendResize(client, this.width, this.height)
+    // A late joiner never received the app's prior output — there is no
+    // replay/history buffer by design. Nudging the real PTY size (and back)
+    // triggers a SIGWINCH, which full-screen apps (vim, htop, less, ...)
+    // handle by redrawing their current screen, so the new client sees the
+    // live state instead of a blank terminal until the next keystroke.
+    if (this.pty && !this._exited && this.clients.size > 0) {
+      try {
+        this.pty.resize(Math.max(1, this.width - 1), this.height)
+        this.pty.resize(this.width, this.height)
+      } catch {}
+    }
   }
 
   removeClient(client) {

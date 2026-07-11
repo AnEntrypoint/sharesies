@@ -41,7 +41,13 @@ async function joinSession(seed) {
   fitAddon.fit()
   term.writeln('sharesies — connecting…')
 
+  // Exposed for the browser-driven e2e checks (web/e2e-*.mjs) to read the
+  // real rendered buffer — xterm renders to <canvas>, so DOM text content is
+  // not a valid way to assert on terminal output from the outside.
+  window.__sharesiesTerm = term
+
   const { session } = createRtcTransport({ namespace: 'sharesies' })
+  window.__sharesiesDebugSession = session
   const roomId = await deriveRoomFromSeed(seed)
 
   let hostPeer = null
@@ -76,6 +82,7 @@ async function joinSession(seed) {
   session.addEventListener('data', (e) => {
     const frame = decodeFrame(e.detail.data)
     if (!frame) return
+    if (window.__sharesiesDebug) console.log('[sharesies frame]', frame.type, frame.payload?.length)
     if (frame.type === FRAME.STDOUT || frame.type === FRAME.STDERR) {
       term.write(frame.payload)
     } else if (frame.type === FRAME.EXIT) {
