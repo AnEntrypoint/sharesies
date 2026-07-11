@@ -8,7 +8,7 @@
 // identically. A single RTCDataChannel per peer carries all five logical
 // streams multiplexed with the frame envelope in rtc-protocol.js.
 
-import { createRtcTransport, deriveRoomFromSeed } from './rtc-node.js'
+import { createRtcTransport, deriveRoomFromSeed, describeSelectedCandidatePair } from './rtc-node.js'
 import { FRAME, encodeFrame, decodeFrame } from './rtc-protocol.js'
 
 export function makeRtcClient(peerPubkey, session) {
@@ -37,7 +37,7 @@ export function makeRtcClient(peerPubkey, session) {
 // SharedSession, fanning RTC peers in/out exactly like HyperDHT clients. Pure
 // event wiring — no networking — so it is unit-testable with a mock
 // EventTarget-based session standing in for a real DataSession.
-export function wireRtcTransport(sharedSession, session) {
+export function wireRtcTransport(sharedSession, session, { onPeerOpen } = {}) {
   const clients = new Map()
 
   session.addEventListener('peer-open', (e) => {
@@ -45,6 +45,7 @@ export function wireRtcTransport(sharedSession, session) {
     const client = makeRtcClient(peerPubkey, session)
     clients.set(peerPubkey, client)
     sharedSession.addClient(client)
+    onPeerOpen?.(peerPubkey, session.peers.get(peerPubkey)?.pc)
   })
 
   session.addEventListener('peer-close', (e) => {
@@ -71,10 +72,21 @@ export function wireRtcTransport(sharedSession, session) {
 // Attaches an RTC (wireweave) join point to an already-running SharedSession.
 // `seed` is the same invite seed used for the HyperDHT keypair; the RTC room
 // id is derived from it so one invite reaches both transports.
-export async function attachRtcTransport(sharedSession, { seed, namespace = 'sharesies' } = {}) {
-  const { session, relayPool, auth } = await createRtcTransport({ namespace })
+export async function attachRtcTransport(sharedSession, { seed, namespace = 'sharesies', portRangeBegin, portRangeEnd, proxy, udpMux, onPeerConnected } = {}) {
+  const { session, relayPool, auth } = await createRtcTransport({ namespace, portRangeBegin, portRangeEnd, proxy, udpMux })
   const roomId = deriveRoomFromSeed(seed)
-  const clients = wireRtcTransport(sharedSession, session)
+  const clients = wireRtcTransport(sharedSession, session, {
+    onPeerOpen: (peerPubkey, pc) => {
+      if (!pc) return
+      // ICE takes a moment after peer-open to settle on its final pair; a
+      // short delay gives selectedCandidatePair() something real to report
+      // instead of racing it.
+      setTimeout(() => {
+        const desc = describeSelectedCandidatePair(pc)
+        if (desc) onPeerConnected?.(peerPubkey, desc)
+      }, 1000)
+    }
+  })
 
   await session.connect(roomId, { displayName: 'host' })
 

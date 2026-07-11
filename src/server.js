@@ -98,7 +98,17 @@ export async function runServer(opts = {}) {
   let rtc = null
   if (opts.web) {
     try {
-      rtc = await attachRtcTransport(session, { seed })
+      rtc = await attachRtcTransport(session, {
+        seed,
+        portRangeBegin: opts.rtcPortRangeBegin,
+        portRangeEnd: opts.rtcPortRangeEnd,
+        proxy: opts.rtcProxy,
+        udpMux: opts.rtcUdpMux,
+        onPeerConnected: (peerPubkey, desc) => {
+          const path = desc.relayed ? 'via TURN relay' : `direct (${desc.localType}/${desc.remoteType})`
+          console.log(`sharesies: browser peer ${peerPubkey.slice(0, 12)} connected ${path}`)
+        }
+      })
     } catch (err) {
       console.error('sharesies: --web failed to start RTC transport: ' + (err && err.message ? err.message : err))
     }

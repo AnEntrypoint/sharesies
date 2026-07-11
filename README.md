@@ -109,6 +109,42 @@ npm run build:web  # one-off production build
 Then serve `web/` with any static file server and open it with `#<seed>`
 matching a locally running `npx sharesies --web <app>`.
 
+### NAT traversal tuning
+
+The CLI server is usually the peer most likely sitting behind a restrictive
+NAT — a home router, carrier-grade NAT, a corporate firewall — since browser
+clients' own OS network stacks tend to be more permissive. `--web` goes
+beyond a plain polyfilled `RTCPeerConnection`: it constructs
+[node-datachannel](https://github.com/murat-dogan/node-datachannel)'s native
+peer directly, unlocking tuning the standard WebRTC API doesn't expose:
+
+```bash
+npx sharesies --web --rtc-port-range 50000-51000 htop
+# pin ICE to a fixed UDP range — port-forward that range on a strict NAT
+
+npx sharesies --web --rtc-udp-mux htop
+# share one UDP port across every browser peer — fewer ports to open on a
+# firewall when several friends join at once. Verified: this is safe across
+# separate processes/machines (the real deployment shape); it specifically
+# breaks same-process self-connections, which is why it's opt-in rather than
+# the default — don't combine it with running two sharesies --web instances
+# on the same host.
+
+npx sharesies --web --rtc-proxy socks5://user:pass@proxyhost:1080 htop
+# route WebRTC ICE through a SOCKS5/HTTP proxy — for networks that block
+# direct UDP/TCP egress entirely
+```
+
+The server logs how each browser peer actually connected:
+
+```
+sharesies: browser peer a1b2c3d4e5f6 connected direct (host/prflx)
+sharesies: browser peer f6e5d4c3b2a1 connected via TURN relay
+```
+
+`direct` means the punch succeeded; `via TURN relay` means it fell back to a
+relay (still works, just extra latency/bandwidth cost on the relay operator).
+
 ---
 
 ## How it works

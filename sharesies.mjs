@@ -13,6 +13,17 @@ SHARE A SPECIFIC APP (server, no flags needed — just name the app):
   npx sharesies --key <seed>        Use a fixed seed (stable invite)
   npx sharesies --web <app>         Also reachable from a browser over WebRTC
 
+WEBRTC NAT-TRAVERSAL TUNING (only with --web):
+  --rtc-port-range <begin>-<end>    Pin ICE to a fixed UDP port range
+                                     (port-forward that range for strict NATs)
+  --rtc-udp-mux                     Share one UDP port across all RTC peers
+                                     (fewer ports to open on a firewall; do
+                                     not combine with running a second
+                                     sharesies --web instance on the same host)
+  --rtc-proxy <socks5|http>://host:port
+                                     Route WebRTC ICE through a proxy, for
+                                     networks that block direct UDP/TCP
+
 JOIN (client, give this to a friend):
   npx sharesies --connect <seed>
   npx sharesies <seed>              (same as above, if seed looks like a key)
@@ -25,8 +36,39 @@ Notes:
   - No ports, no servers, no firewall config. End-to-end encrypted by HyperDHT.
 `
 
+// "socks5://user:pass@host:port" or "http://host:port" → node-datachannel's
+// ProxyServer shape ({ type, ip, port, username?, password? }).
+function parseProxyUrl(input) {
+  let url
+  try {
+    url = new URL(input)
+  } catch {
+    throw new Error(`--rtc-proxy: not a valid URL: ${input}`)
+  }
+  const type = url.protocol === 'socks5:' ? 'Socks5' : url.protocol === 'http:' ? 'Http' : null
+  if (!type) throw new Error(`--rtc-proxy: unsupported scheme "${url.protocol}" (use socks5:// or http://)`)
+  if (!url.hostname || !url.port) throw new Error(`--rtc-proxy: URL must include host and port: ${input}`)
+  const proxy = { type, ip: url.hostname, port: Number(url.port) }
+  if (url.username) proxy.username = decodeURIComponent(url.username)
+  if (url.password) proxy.password = decodeURIComponent(url.password)
+  return proxy
+}
+
+function parsePortRange(input) {
+  const m = /^(\d+)-(\d+)$/.exec(input || '')
+  if (!m) throw new Error(`--rtc-port-range: expected "<begin>-<end>", got "${input}"`)
+  const begin = Number(m[1])
+  const end = Number(m[2])
+  if (begin > end) throw new Error(`--rtc-port-range: begin (${begin}) must be <= end (${end})`)
+  return { begin, end }
+}
+
 function parseArgs(argv) {
-  const out = { connect: null, key: null, app: null, shell: false, web: false, webBase: null, positionals: [], help: false }
+  const out = {
+    connect: null, key: null, app: null, shell: false, web: false, webBase: null,
+    rtcPortRangeBegin: undefined, rtcPortRangeEnd: undefined, rtcUdpMux: false, rtcProxy: undefined,
+    positionals: [], help: false
+  }
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
     if (a === '--help' || a === '-h') out.help = true
@@ -36,6 +78,9 @@ function parseArgs(argv) {
     else if (a === '--shell') out.shell = true
     else if (a === '--web') out.web = true
     else if (a === '--web-base') out.webBase = argv[++i]
+    else if (a === '--rtc-port-range') { const r = parsePortRange(argv[++i]); out.rtcPortRangeBegin = r.begin; out.rtcPortRangeEnd = r.end }
+    else if (a === '--rtc-udp-mux') out.rtcUdpMux = true
+    else if (a === '--rtc-proxy') out.rtcProxy = parseProxyUrl(argv[++i])
     else if (a.startsWith('--')) { /* ignore unknown long flags */ }
     else out.positionals.push(a)
   }
@@ -64,10 +109,19 @@ async function main() {
     return await runClient(args.positionals[0])
   }
 
+  const rtcOpts = {
+    web: args.web,
+    webBase: args.webBase || undefined,
+    rtcPortRangeBegin: args.rtcPortRangeBegin,
+    rtcPortRangeEnd: args.rtcPortRangeEnd,
+    rtcUdpMux: args.rtcUdpMux,
+    rtcProxy: args.rtcProxy
+  }
+
   // Otherwise: server mode. A specific app must be named.
   if (args.shell) {
     const { defaultShell } = await import('./src/server.js')
-    return await runServer({ seed: args.key || undefined, command: defaultShell(), web: args.web, webBase: args.webBase || undefined })
+    return await runServer({ seed: args.key || undefined, command: defaultShell(), ...rtcOpts })
   }
 
   const appParts = args.app
@@ -88,7 +142,7 @@ async function main() {
   const command = appParts[0]
   const appArgs = appParts.slice(1)
 
-  return await runServer({ seed: args.key || undefined, command, args: appArgs, web: args.web, webBase: args.webBase || undefined })
+  return await runServer({ seed: args.key || undefined, command, args: appArgs, ...rtcOpts })
 }
 
 const isMain = (() => {

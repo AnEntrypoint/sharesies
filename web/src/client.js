@@ -6,7 +6,7 @@
 
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
-import { createRtcTransport, deriveRoomFromSeed } from './rtc-browser.js'
+import { createRtcTransport, deriveRoomFromSeed, describeSelectedCandidatePair } from './rtc-browser.js'
 import { FRAME, encodeFrame, decodeFrame } from '../../src/rtc-protocol.js'
 
 const statusEl = document.getElementById('status')
@@ -64,6 +64,15 @@ async function joinSession(seed) {
     term.clear()
     term.focus()
     send(hostPeer, FRAME.RESIZE, { width: term.cols, height: term.rows })
+    // ICE takes a moment after peer-open to settle on its final pair.
+    setTimeout(async () => {
+      const pc = session.peers.get(hostPeer)?.pc
+      if (!pc) return
+      const desc = await describeSelectedCandidatePair(pc)
+      if (desc && window.__sharesiesDebug) {
+        console.log('[sharesies] connection path:', desc.relayed ? 'via TURN relay' : `direct (${desc.localType}/${desc.remoteType})`)
+      }
+    }, 1000)
   })
 
   session.addEventListener('peer-close', () => {

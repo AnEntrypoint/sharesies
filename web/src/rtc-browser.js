@@ -35,3 +35,26 @@ export function createRtcTransport({ namespace = 'sharesies' } = {}) {
 
   return { session, relayPool, auth }
 }
+
+// Browser mirror of src/rtc-node.js's describeSelectedCandidatePair — real
+// RTCPeerConnection has no synchronous accessor for this (that's a
+// node-datachannel-specific extension), so it goes through the standard
+// async getStats() API and cross-references the succeeded candidate pair
+// against its local/remote candidate records.
+export async function describeSelectedCandidatePair(pc) {
+  try {
+    const stats = await pc.getStats()
+    let pair = null
+    for (const report of stats.values()) {
+      if (report.type === 'candidate-pair' && report.state === 'succeeded' && (report.selected || report.nominated)) { pair = report; break }
+    }
+    if (!pair) return null
+    const local = stats.get(pair.localCandidateId)
+    const remote = stats.get(pair.remoteCandidateId)
+    const localType = local?.candidateType || 'unknown'
+    const remoteType = remote?.candidateType || 'unknown'
+    return { localType, remoteType, relayed: localType === 'relay' || remoteType === 'relay' }
+  } catch {
+    return null
+  }
+}

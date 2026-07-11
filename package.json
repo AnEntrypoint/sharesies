@@ -56,7 +56,7 @@
     "nostr-tools": "^2.23.9",
     "protomux": "^3.7.0",
     "tt-native": "^1.0.0",
-    "wireweave": "^0.3.33",
+    "wireweave": "^0.3.34",
     "ws": "^8.21.0",
     "xstate": "^5.18.0"
   },
