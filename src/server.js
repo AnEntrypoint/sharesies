@@ -10,6 +10,7 @@ import os from 'node:os'
 import { deriveKeyPair, randomSeed } from './keys.js'
 import { getProtocol } from './protocol.js'
 import { createSharedSession } from './session.js'
+import { attachRtcTransport } from './rtc-server.js'
 
 export function defaultShell() {
   if (process.platform === 'win32') return process.env.COMSPEC || 'cmd.exe'
@@ -89,6 +90,18 @@ export async function runServer(opts = {}) {
   const publicKey = HypercoreId.encode(keyPair.publicKey)
   const showCommand = (c) => `npx sharesies --connect ${seed}`
 
+  let rtc = null
+  if (opts.web) {
+    try {
+      rtc = await attachRtcTransport(session, { seed })
+    } catch (err) {
+      console.error('sharesies: --web failed to start RTC transport: ' + (err && err.message ? err.message : err))
+    }
+  }
+
+  const webBase = opts.webBase || 'https://anentrypoint.github.io/sharesies/'
+  const showWebUrl = () => `${webBase}#${seed}`
+
   console.log('')
   console.log('sharesies — sharing a terminal session over HyperDHT')
   console.log('------------------------------------------------------')
@@ -98,15 +111,24 @@ export async function runServer(opts = {}) {
   console.log('Give a friend this command to join the SAME session:')
   console.log('')
   console.log('  ' + showCommand())
+  if (rtc) {
+    console.log('')
+    console.log('Or, from a browser (WebRTC, no install):')
+    console.log('')
+    console.log('  ' + showWebUrl())
+  }
   console.log('')
   console.log('Anyone with that command sees the same screen and can type.')
   console.log('The session ends when the app exits. Ctrl+C closes sharesies.')
   console.log('')
 
   let closed = false
-  function shutdown(code = 0) {
+  async function shutdown(code = 0) {
     if (closed) return
     closed = true
+    if (rtc) {
+      await Promise.race([rtc.close(), new Promise((resolve) => setTimeout(resolve, 1500))]).catch(() => {})
+    }
     try {
       session.destroy()
     } catch {}

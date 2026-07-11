@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>sharesies — shared terminal</title>
+<link rel="stylesheet" href="./vendor/xterm.css" />
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; background: #0b0e14; color: #d5d8de; font-family: -apple-system, Segoe UI, sans-serif; }
+  #app { display: flex; flex-direction: column; height: 100%; }
+  header { padding: 10px 14px; border-bottom: 1px solid #1e2430; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 14px; font-weight: 600; margin: 0; letter-spacing: 0.02em; }
+  #status { font-size: 12px; padding: 2px 8px; border-radius: 10px; background: #1e2430; }
+  #status[data-kind="ok"] { background: #163a24; color: #5fd98a; }
+  #status[data-kind="warn"] { background: #3a2f16; color: #e0b355; }
+  #status[data-kind="error"] { background: #3a1616; color: #e05f5f; }
+  main { flex: 1; min-height: 0; position: relative; }
+  #join-form { max-width: 420px; margin: 60px auto; padding: 0 16px; text-align: center; }
+  #join-form p { color: #8b93a3; font-size: 13px; }
+  #join-form input { width: 100%; padding: 10px 12px; font-size: 14px; border-radius: 6px; border: 1px solid #2a3140; background: #131722; color: #d5d8de; }
+  #join-form button { margin-top: 10px; padding: 10px 16px; font-size: 14px; border-radius: 6px; border: none; background: #2f6feb; color: white; cursor: pointer; }
+  #join-form button:hover { background: #3d7cf5; }
+  #terminal { position: absolute; inset: 0; padding: 8px; }
+  #terminal[hidden] { display: none; }
+  footer { padding: 8px 14px; font-size: 11px; color: #5b6272; border-top: 1px solid #1e2430; }
+  footer a { color: #7fa8f5; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>sharesies</h1>
+    <span id="status" data-kind="info">Idle</span>
+  </header>
+  <main>
+    <form id="join-form">
+      <p>Paste the invite seed a host gave you (or use their full link).</p>
+      <input id="seed-input" type="text" autocomplete="off" spellcheck="false" placeholder="invite seed" />
+      <div><button type="submit">Join session</button></div>
+      <p>Anyone with the seed can see and type into the same terminal. Never share it publicly.</p>
+    </form>
+    <div id="terminal" hidden></div>
+  </main>
+  <footer>
+    End-to-end WebRTC via <a href="https://github.com/AnEntrypoint/wireweave" target="_blank" rel="noopener">wireweave</a>.
+    This page is public; the session itself is only reachable with the invite seed.
+    Source: <a href="https://github.com/AnEntrypoint/sharesies" target="_blank" rel="noopener">sharesies</a>.
+  </footer>
+</div>
+<script type="module" src="./bundle.js"></script>
+</body>
+</html>

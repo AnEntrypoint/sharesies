@@ -8,3 +8,5 @@ Thumbs.db
 .gm/exec-spool/.ci-validated
 .gm/exec-spool/.watcher.log
 .gm/pw-sock-*/
+web/bundle.js
+web/bundle.js.map

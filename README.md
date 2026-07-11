@@ -17,6 +17,9 @@ npx sharesies --connect <seed>
 Both of you now share one live terminal. Multiple friends can each run the
 connect command and join the **same session** at once.
 
+Friends without a terminal can also join **from a browser**, no install —
+see [Browser / GitHub Pages client](#browser--github-pages-client) below.
+
 ---
 
 ## Why sharesies
@@ -65,6 +68,49 @@ npx sharesies <seed>
 
 ---
 
+## Browser / GitHub Pages client
+
+```bash
+npx sharesies --web htop     # also reachable from a browser over WebRTC
+```
+
+The host prints a second invite — a link, not a command:
+
+```
+https://anentrypoint.github.io/sharesies/#<seed>
+```
+
+Anyone who opens that link joins the **same live session** as CLI clients,
+straight from the browser: no install, no extension. Under the hood the
+browser client uses [wireweave](https://github.com/AnEntrypoint/wireweave)
+for a peer-to-peer `RTCDataChannel`, signaled over public nostr relays, and
+renders the shared PTY with [xterm.js](https://xterm.js.org). The CLI server
+joins the same WebRTC room directly (via
+[node-datachannel](https://github.com/murat-dogan/node-datachannel)'s native
+WebRTC binding) — there is no separate relay process to keep alive, and one
+seed is a single invite for both transports.
+
+`--web` is opt-in: plain `npx sharesies <app>` stays HyperDHT-only with zero
+extra native dependencies pulled in at install/run time.
+
+**Privacy.** The GitHub Pages URL itself is public — anyone can load the page.
+What's private is the **session**: joining requires the invite seed, exactly
+like the CLI's `--connect <seed>`. The page never lists or discovers other
+sessions. Treat the seed like a password: whoever has it can see and type into
+your terminal.
+
+### Local development
+
+```bash
+npm run dev:web    # rebuild web/bundle.js on change
+npm run build:web  # one-off production build
+```
+
+Then serve `web/` with any static file server and open it with `#<seed>`
+matching a locally running `npx sharesies --web <app>`.
+
+---
+
 ## How it works
 
 ```
@@ -88,13 +134,28 @@ npx sharesies <seed>
 6. When the app exits, the exit code is sent to all clients, channels close, and
    `sharesies` exits.
 
+With `--web`, a second transport runs alongside: the server derives a room id
+from `sha256("sharesies:" + seed)` and joins it as a wireweave `DataSession`
+peer. Each browser client that joins the same room gets its own
+`RTCDataChannel`; since a data channel is one raw binary pipe (no protomux-style
+multiplexing), `stdin / stdout / stderr / exit / resize` are carried as a small
+1-byte-type-prefixed frame instead (`src/rtc-protocol.js`). Both transports feed
+the same `SharedSession`, so a HyperDHT client and a browser client see and
+affect the identical live PTY.
+
 ---
 
 ## Security
 
-- All traffic is end-to-end encrypted via the Noise protocol (HyperDHT).
-- The seed is effectively a password: only someone with it can derive the public
-  key and connect. Generate a fresh seed per session; never log or commit it.
+- HyperDHT traffic is end-to-end encrypted via the Noise protocol.
+- WebRTC traffic (`--web`) is encrypted via DTLS/SRTP per the WebRTC spec;
+  peer discovery/signaling happens over public nostr relays (see
+  [wireweave](https://github.com/AnEntrypoint/wireweave)), using a fresh,
+  in-memory-only nostr identity generated per server/client process — never
+  persisted, never your real identity.
+- The seed is effectively a password for **both** transports: only someone
+  with it can derive the HyperDHT public key or the WebRTC room id. Generate a
+  fresh seed per session; never log or commit it.
 - The local host process is the only place the app runs.
 
 ---
@@ -106,6 +167,8 @@ import { runServer, runClient, deriveKeyPair, createSharedSession } from 'shares
 
 await runServer({ command: 'htop' })        // host
 await runClient('my-shared-seed-hex')        // join
+
+await runServer({ command: 'htop', web: true })   // host, also reachable from a browser
 ```
 
 ---
@@ -115,6 +178,10 @@ await runClient('my-shared-seed-hex')        // join
 Pushing to `main` runs tests and publishes a patched version to npm
 (`.github/workflows/publish.yml`). A `NPM_TOKEN` repository secret is required
 for publishing.
+
+Pushing changes under `web/` (or the shared `src/rtc-protocol.js` framing)
+rebuilds and deploys the browser client to GitHub Pages
+(`.github/workflows/pages.yml`), independent of the npm publish flow.
 
 ---
 
