@@ -1,0 +1,60 @@
+{
+  "name": "sharesies",
+  "version": "1.0.0",
+  "description": "Realtime peer-to-peer shared TUI. Runs a single app in your terminal and lets friends connect over HyperDHT to see and type in the same session. No ports, no servers, no popups.",
+  "type": "module",
+  "main": "index.js",
+  "module": "index.js",
+  "bin": {
+    "sharesies": "sharesies.mjs"
+  },
+  "files": [
+    "sharesies.mjs",
+    "index.js",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "start": "node sharesies.mjs",
+    "test": "node --test"
+  },
+  "keywords": [
+    "hyperssh",
+    "hypershell",
+    "hyperdht",
+    "p2p",
+    "shared-terminal",
+    "tui",
+    "remote-shell",
+    "ssh-alternative",
+    "holepunch",
+    "realtime",
+    "collaborative-terminal"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AnEntrypoint/sharesies.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AnEntrypoint/sharesies/issues"
+  },
+  "homepage": "https://github.com/AnEntrypoint/sharesies#readme",
+  "license": "MIT",
+  "author": "lanmower",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "compact-encoding": "^2.16.0",
+    "hypercore-id-encoding": "^1.3.0",
+    "hyperdht": "^6.29.6",
+    "hypershell": "^0.0.15",
+    "protomux": "^3.7.0",
+    "tt-native": "^1.0.0",
+    "xstate": "^5.18.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

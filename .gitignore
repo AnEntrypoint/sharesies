@@ -1,0 +1,9 @@
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+.gm/
+.git-status-failed
+.gm/witness/
+.gm/exec-spool/.ci-validated
+.gm/exec-spool/.watcher.log

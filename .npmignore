@@ -1,0 +1,5 @@
+.github/
+src/*.test.mjs
+.gm/
+*.log
+.DS_Store
