@@ -1,22 +1,25 @@
 // Server side: run a single app in the current terminal and share it.
 //
-// With no parameters `npx sharesies` picks a fresh random seed, spawns the
-// default shell (or the app you name), mirrors it to your own terminal, and
-// advertises the session on HyperDHT. Every connecting friend joins the SAME
-// session — they see the same view and can type too. When the app exits the
-// whole thing closes.
+// `npx sharesies <app>` picks a fresh random seed, spawns THAT app directly
+// (no shell wrapper), mirrors it to your own terminal, and advertises the
+// session on HyperDHT. Every connecting friend joins the SAME session — they
+// see the same view and can type too. When the app exits the whole thing
+// closes. Pass `--shell` to share your login shell instead.
 
 import os from 'node:os'
 import { deriveKeyPair, randomSeed } from './keys.js'
 import { getProtocol } from './protocol.js'
 import { createSharedSession } from './session.js'
 
-function defaultShell() {
+export function defaultShell() {
   if (process.platform === 'win32') return process.env.COMSPEC || 'cmd.exe'
   return process.env.SHELL || 'bash'
 }
 
 export async function runServer(opts = {}) {
+  if (!opts.command) {
+    throw new Error('runServer requires opts.command — the specific app to share')
+  }
   const { handshakeSpawn, resize } = await getProtocol()
   const { buffer, uint } = (await import('compact-encoding')).default ?? (await import('compact-encoding'))
   const HypercoreId = (await import('hypercore-id-encoding')).default ?? (await import('hypercore-id-encoding'))
@@ -24,7 +27,7 @@ export async function runServer(opts = {}) {
   const DHT = (await import('hyperdht')).default ?? (await import('hyperdht'))
 
   const seed = opts.seed || randomSeed()
-  const command = opts.command || defaultShell()
+  const command = opts.command
   const args = opts.args && opts.args.length ? opts.args : []
   const localTTY = !!process.stdout.isTTY
 

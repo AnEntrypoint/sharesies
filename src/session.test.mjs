@@ -28,9 +28,9 @@ function makeClient() {
   return { channel, captured }
 }
 
-test('broadcasts PTY output to every connected client', () => {
+test('broadcasts PTY output to every connected client', async () => {
   const session = new SharedSession({ command: 'sh', ptyFactory: makeMockPty })
-  session.start()
+  await session.start()
   const a = makeClient()
   const b = makeClient()
   session.addClient(a)
@@ -43,9 +43,9 @@ test('broadcasts PTY output to every connected client', () => {
   session.destroy()
 })
 
-test('writes client input into the shared PTY', () => {
+test('writes client input into the shared PTY', async () => {
   const session = new SharedSession({ command: 'sh', ptyFactory: makeMockPty })
-  session.start()
+  await session.start()
   const a = makeClient()
   session.addClient(a)
 
@@ -55,9 +55,9 @@ test('writes client input into the shared PTY', () => {
   session.destroy()
 })
 
-test('resize propagates to other clients but not the source', () => {
+test('resize propagates to other clients but not the source', async () => {
   const session = new SharedSession({ command: 'sh', ptyFactory: makeMockPty })
-  session.start()
+  await session.start()
   const a = makeClient()
   const b = makeClient()
   session.addClient(a)
@@ -75,9 +75,9 @@ test('resize propagates to other clients but not the source', () => {
   session.destroy()
 })
 
-test('new client is synced to the current PTY size on join', () => {
+test('new client is synced to the current PTY size on join', async () => {
   const session = new SharedSession({ command: 'sh', ptyFactory: makeMockPty })
-  session.start()
+  await session.start()
   session.resize(200, 50)
   const a = makeClient()
   session.addClient(a)
@@ -87,9 +87,9 @@ test('new client is synced to the current PTY size on join', () => {
   session.destroy()
 })
 
-test('app exit broadcasts exit code once and fires onAppExit exactly once', () => {
+test('app exit broadcasts exit code once and fires onAppExit exactly once', async () => {
   const session = new SharedSession({ command: 'sh', ptyFactory: makeMockPty })
-  session.start()
+  await session.start()
   const a = makeClient()
   const b = makeClient()
   session.addClient(a)

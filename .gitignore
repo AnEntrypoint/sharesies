@@ -7,3 +7,4 @@ Thumbs.db
 .gm/witness/
 .gm/exec-spool/.ci-validated
 .gm/exec-spool/.watcher.log
+.gm/pw-sock-*/

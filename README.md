@@ -25,8 +25,8 @@ connect command and join the **same session** at once.
   after the fact, `sharesies` streams the PTY byte-for-byte in both directions,
   so server and every client see the exact same view and can type live.
 - **No popups.** The shared app runs right in your current terminal.
-- **One app, one session.** It shares a single app (default: your shell). When
-  the app exits, `sharesies` closes.
+- **One app, one session.** It runs a single named app directly (no shell
+  wrapper). When the app exits, `sharesies` closes.
 - **Many clients, one session.** Multiple people can connect and interact with
   the same PTY. Session lifecycle is modelled with an
   [xstate](https://stately.ai/docs/xstate) state machine, so teardown happens
@@ -39,17 +39,19 @@ connect command and join the **same session** at once.
 
 ## Usage
 
-### Share a terminal (server)
+### Share a specific app (server)
 
 ```bash
-npx sharesies                 # share your default shell
-npx sharesies htop            # share a specific app
-npx sharesies --app "vim -c help"   # app with arguments
-npx sharesies --key <seed>    # fixed seed → stable invite command
+npx sharesies htop                 # share a specific app directly
+npx sharesies vim                  # share another app
+npx sharesies --app "vim -c help"  # app with arguments
+npx sharesies --key <seed>         # fixed seed → stable invite command
+npx sharesies --shell              # share your login shell instead
 ```
 
-With no parameters, `sharesies` generates a fresh random seed, runs the app in
-your terminal, and prints the invite command. Give that command to a friend.
+You name the app and `sharesies` runs **that app directly** (no shell wrapper)
+in your terminal, advertises it on HyperDHT, and prints the invite command.
+When the app exits, `sharesies` closes. Give the invite command to a friend.
 
 ### Join a session (client)
 

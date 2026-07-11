@@ -5,31 +5,34 @@ import { runClient } from './src/client.js'
 
 const HELP = `sharesies — realtime shared TUI over HyperDHT
 
-SHARE (server, no params needed):
-  npx sharesies                 Share your default shell
-  npx sharesies htop            Share a specific app
-  npx sharesies --app "vim -c help"   Share an app with arguments
-  npx sharesies --key <seed>    Use a fixed seed (stable invite)
+SHARE A SPECIFIC APP (server, no flags needed — just name the app):
+  npx sharesies htop                 Share a specific app
+  npx sharesies vim                  Share another app
+  npx sharesies --app "vim -c help"  App with arguments
+  npx sharesies --shell             Share your login shell instead
+  npx sharesies --key <seed>        Use a fixed seed (stable invite)
 
 JOIN (client, give this to a friend):
   npx sharesies --connect <seed>
-  npx sharesies <seed>          (same as above, if seed looks like a key)
+  npx sharesies <seed>              (same as above, if seed looks like a key)
 
 Notes:
+  - You share ONE app directly — no terminal wrapper. When that app exits,
+    sharesies closes.
   - The seed is the password. Anyone with the connect command joins the SAME
-    live session and can see + type in the shared terminal.
-  - The session ends when the shared app exits. Ctrl+C closes sharesies.
+    live session and can see + type in the shared app.
   - No ports, no servers, no firewall config. End-to-end encrypted by HyperDHT.
 `
 
 function parseArgs(argv) {
-  const out = { connect: null, key: null, app: null, positionals: [], help: false }
+  const out = { connect: null, key: null, app: null, shell: false, positionals: [], help: false }
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
     if (a === '--help' || a === '-h') out.help = true
     else if (a === '--connect') out.connect = argv[++i]
     else if (a === '--key') out.key = argv[++i]
     else if (a === '--app') out.app = argv[++i]
+    else if (a === '--shell') out.shell = true
     else if (a.startsWith('--')) { /* ignore unknown long flags */ }
     else out.positionals.push(a)
   }
@@ -58,11 +61,27 @@ async function main() {
     return await runClient(args.positionals[0])
   }
 
-  // Otherwise: server mode.
+  // Otherwise: server mode. A specific app must be named.
+  if (args.shell) {
+    const { defaultShell } = await import('./src/server.js')
+    return await runServer({ seed: args.key || undefined, command: defaultShell() })
+  }
+
   const appParts = args.app
     ? args.app.split(/\s+/).filter(Boolean)
     : args.positionals
-  const command = appParts[0] || null
+
+  if (appParts.length === 0) {
+    process.stderr.write('sharesies shares a specific app directly.\n\n')
+    process.stderr.write('  npx sharesies <app> [args...]     e.g.  npx sharesies htop\n')
+    process.stderr.write('  npx sharesies --app "vim -c help"\n')
+    process.stderr.write('  npx sharesies --shell             (share your login shell)\n')
+    process.stderr.write('  npx sharesies --connect <seed>    (join a session)\n\n')
+    process.stderr.write('The named app runs in your terminal; when it exits, sharesies closes.\n')
+    process.exit(1)
+  }
+
+  const command = appParts[0]
   const appArgs = appParts.slice(1)
 
   return await runServer({ seed: args.key || undefined, command, args: appArgs })
