@@ -1,5 +1,5 @@
 // One-shot adversarial witness: a real Chromium tab loads the actual
-// web/index.html + bundle.js, joins a live sharesies --web session over real
+// web/index.html + bundle.js, joins a live joinin --web session over real
 // WebRTC, types a command, and the output must appear in the real xterm.js
 // DOM. Not part of `npm test` (needs a browser binary) — run manually via
 // `node web/e2e-browser-check.mjs`.
@@ -33,7 +33,7 @@ const server = await runServer({
   web: true,
   seed
 })
-console.log('[test] sharesies server up, publicKey', server.publicKey.slice(0, 12))
+console.log('[test] joinin server up, publicKey', server.publicKey.slice(0, 12))
 
 const browser = await chromium.launch()
 const page = await browser.newPage()

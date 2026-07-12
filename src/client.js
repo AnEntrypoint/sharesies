@@ -1,6 +1,6 @@
 // Client side: join a shared session created by a friend.
 //
-// `npx sharesies --connect <seed>` derives the same keypair the server used,
+// `npx joinin --connect <seed>` derives the same keypair the server used,
 // connects over HyperDHT, and mirrors the shared PTY into your terminal. Your
 // keystrokes go to the same PTY everyone else is typing into. Multiple friends
 // can each run this and share one live session.

@@ -11,3 +11,5 @@ Thumbs.db
 web/bundle.js
 web/bundle.js.map
 *.swp
+.gm/browser-profile/
+.gm/browser-profile-*/

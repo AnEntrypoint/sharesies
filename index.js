@@ -1,4 +1,4 @@
-// sharesies — SDK entry point.
+// joinin — SDK entry point.
 //
 // Programmatic access to the same server/client used by the CLI.
 export { runServer } from './src/server.js'

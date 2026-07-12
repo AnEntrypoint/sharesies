@@ -1,6 +1,6 @@
 // Server side: run a single app in the current terminal and share it.
 //
-// `npx sharesies <app>` picks a fresh random seed, spawns THAT app directly
+// `npx joinin <app>` picks a fresh random seed, spawns THAT app directly
 // (no shell wrapper), mirrors it to your own terminal, and advertises the
 // session on HyperDHT. Every connecting friend joins the SAME session — they
 // see the same view and can type too. When the app exits the whole thing
@@ -87,7 +87,7 @@ export async function runServer(opts = {}) {
   await server.listen(keyPair)
 
   const publicKey = HypercoreId.encode(keyPair.publicKey)
-  const showCommand = (c) => `npx sharesies --connect ${seed}`
+  const showCommand = (c) => `npx joinin --connect ${seed}`
 
   // Spawn the PTY only once every transport that should receive its initial
   // draw is ready to accept connections. A late-joining client only ever
@@ -106,11 +106,11 @@ export async function runServer(opts = {}) {
         udpMux: opts.rtcUdpMux,
         onPeerConnected: (peerPubkey, desc) => {
           const path = desc.relayed ? 'via TURN relay' : `direct (${desc.localType}/${desc.remoteType})`
-          console.log(`sharesies: browser peer ${peerPubkey.slice(0, 12)} connected ${path}`)
+          console.log(`joinin: browser peer ${peerPubkey.slice(0, 12)} connected ${path}`)
         }
       })
     } catch (err) {
-      console.error('sharesies: --web failed to start RTC transport: ' + (err && err.message ? err.message : err))
+      console.error('joinin: --web failed to start RTC transport: ' + (err && err.message ? err.message : err))
     }
   }
 
@@ -120,7 +120,7 @@ export async function runServer(opts = {}) {
   const showWebUrl = () => `${webBase}#${seed}`
 
   console.log('')
-  console.log('sharesies — sharing a terminal session over HyperDHT')
+  console.log('joinin — sharing a terminal session over HyperDHT')
   console.log('------------------------------------------------------')
   console.log('App:     ' + (args.length ? `${command} ${args.join(' ')}` : command))
   console.log('Public:  ' + publicKey)
@@ -136,7 +136,7 @@ export async function runServer(opts = {}) {
   }
   console.log('')
   console.log('Anyone with that command sees the same screen and can type.')
-  console.log('The session ends when the app exits. Ctrl+C closes sharesies.')
+  console.log('The session ends when the app exits. Ctrl+C closes joinin.')
   console.log('')
 
   let closed = false

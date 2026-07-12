@@ -3,15 +3,15 @@ import { pathToFileURL } from 'node:url'
 import { runServer } from './src/server.js'
 import { runClient } from './src/client.js'
 
-const HELP = `sharesies — realtime shared TUI over HyperDHT
+const HELP = `joinin — realtime shared TUI over HyperDHT
 
 SHARE A SPECIFIC APP (server, no flags needed — just name the app):
-  npx sharesies htop                 Share a specific app
-  npx sharesies vim                  Share another app
-  npx sharesies --app "vim -c help"  App with arguments
-  npx sharesies --shell             Share your login shell instead
-  npx sharesies --key <seed>        Use a fixed seed (stable invite)
-  npx sharesies --web <app>         Also reachable from a browser over WebRTC
+  npx joinin htop                 Share a specific app
+  npx joinin vim                  Share another app
+  npx joinin --app "vim -c help"  App with arguments
+  npx joinin --shell             Share your login shell instead
+  npx joinin --key <seed>        Use a fixed seed (stable invite)
+  npx joinin --web <app>         Also reachable from a browser over WebRTC
 
 WEBRTC NAT-TRAVERSAL TUNING (only with --web):
   --rtc-port-range <begin>-<end>    Pin ICE to a fixed UDP port range
@@ -19,18 +19,18 @@ WEBRTC NAT-TRAVERSAL TUNING (only with --web):
   --rtc-udp-mux                     Share one UDP port across all RTC peers
                                      (fewer ports to open on a firewall; do
                                      not combine with running a second
-                                     sharesies --web instance on the same host)
+                                     joinin --web instance on the same host)
   --rtc-proxy <socks5|http>://host:port
                                      Route WebRTC ICE through a proxy, for
                                      networks that block direct UDP/TCP
 
 JOIN (client, give this to a friend):
-  npx sharesies --connect <seed>
-  npx sharesies <seed>              (same as above, if seed looks like a key)
+  npx joinin --connect <seed>
+  npx joinin <seed>              (same as above, if seed looks like a key)
 
 Notes:
   - You share ONE app directly — no terminal wrapper. When that app exits,
-    sharesies closes.
+    joinin closes.
   - The seed is the password. Anyone with the connect command joins the SAME
     live session and can see + type in the shared app.
   - No ports, no servers, no firewall config. End-to-end encrypted by HyperDHT.
@@ -129,13 +129,13 @@ async function main() {
     : args.positionals
 
   if (appParts.length === 0) {
-    process.stderr.write('sharesies shares a specific app directly.\n\n')
-    process.stderr.write('  npx sharesies <app> [args...]     e.g.  npx sharesies htop\n')
-    process.stderr.write('  npx sharesies --app "vim -c help"\n')
-    process.stderr.write('  npx sharesies --shell             (share your login shell)\n')
-    process.stderr.write('  npx sharesies --web <app>         (also reachable from a browser)\n')
-    process.stderr.write('  npx sharesies --connect <seed>    (join a session)\n\n')
-    process.stderr.write('The named app runs in your terminal; when it exits, sharesies closes.\n')
+    process.stderr.write('joinin shares a specific app directly.\n\n')
+    process.stderr.write('  npx joinin <app> [args...]     e.g.  npx joinin htop\n')
+    process.stderr.write('  npx joinin --app "vim -c help"\n')
+    process.stderr.write('  npx joinin --shell             (share your login shell)\n')
+    process.stderr.write('  npx joinin --web <app>         (also reachable from a browser)\n')
+    process.stderr.write('  npx joinin --connect <seed>    (join a session)\n\n')
+    process.stderr.write('The named app runs in your terminal; when it exits, joinin closes.\n')
     process.exit(1)
   }
 
@@ -155,7 +155,7 @@ const isMain = (() => {
 
 if (isMain) {
   main().catch((err) => {
-    process.stderr.write('sharesies fatal: ' + (err && err.message ? err.message : err) + '\n')
+    process.stderr.write('joinin fatal: ' + (err && err.message ? err.message : err) + '\n')
     process.exit(1)
   })
 }

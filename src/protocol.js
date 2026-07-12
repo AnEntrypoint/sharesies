@@ -1,7 +1,7 @@
 // Wire protocol for the shared TUI session.
 //
 // Reuses hypershell's (holepunch "hyperssh") spawn/resize encodings so a
-// `sharesies` session is wire-compatible with the hypershell protocol. If the
+// `joinin` session is wire-compatible with the hypershell protocol. If the
 // `hypershell` package is unavailable we fall back to a local reimplementation
 // built on `compact-encoding` so the package stays self-contained.
 

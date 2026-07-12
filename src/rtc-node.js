@@ -66,7 +66,7 @@ export function deriveRoomFromSeed(seed) {
 // every remote client are always separate processes/machines, so muxing is
 // safe and beneficial there (fewer local ports to traverse a firewall for
 // when fielding many remote peers). It stays opt-in rather than default
-// because sharesies' own local dev/testing routinely spins up same-process
+// because joinin's own local dev/testing routinely spins up same-process
 // peer pairs, which would silently break if this defaulted on.
 export function makeNativePeerConnectionFactory({ portRangeBegin, portRangeEnd, proxy, udpMux = false, PeerConnection, PolyfillRTCPeerConnection }) {
   return (config) => {
@@ -102,7 +102,7 @@ export function describeSelectedCandidatePair(pc) {
 // Minimal wireweave surface: just RelayPool (signaling transport), NostrAuth
 // (ephemeral signing identity) and DataSession (the actual RTCDataChannel).
 // The full createWireweave() also wires up chat/channels/roles/servers, which
-// sharesies has no use for.
+// joinin has no use for.
 export async function createRtcTransport({ namespace = 'sharesies', portRangeBegin, portRangeEnd, proxy, udpMux = false } = {}) {
   await installRtcGlobals()
   const [

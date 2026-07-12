@@ -1,4 +1,4 @@
-// Browser client: joins a sharesies session over WebRTC and mirrors the
+// Browser client: joins a joinin session over WebRTC and mirrors the
 // shared PTY into an xterm.js terminal ("wterm" — the stable web-terminal
 // surface). Handles diverse full-screen TUIs (alt-screen, cursor movement,
 // colors) via xterm's VT100/xterm emulation, plus resize fan-out, bracketed
@@ -39,7 +39,7 @@ async function joinSession(seed) {
   term.loadAddon(fitAddon)
   term.open(termEl)
   fitAddon.fit()
-  term.writeln('sharesies — connecting…')
+  term.writeln('joinin — connecting…')
 
   // Exposed for the browser-driven e2e checks (web/e2e-*.mjs) to read the
   // real rendered buffer — xterm renders to <canvas>, so DOM text content is
@@ -70,7 +70,7 @@ async function joinSession(seed) {
       if (!pc) return
       const desc = await describeSelectedCandidatePair(pc)
       if (desc && window.__sharesiesDebug) {
-        console.log('[sharesies] connection path:', desc.relayed ? 'via TURN relay' : `direct (${desc.localType}/${desc.remoteType})`)
+        console.log('[joinin] connection path:', desc.relayed ? 'via TURN relay' : `direct (${desc.localType}/${desc.remoteType})`)
       }
     }, 1000)
   })
@@ -91,12 +91,12 @@ async function joinSession(seed) {
   session.addEventListener('data', (e) => {
     const frame = decodeFrame(e.detail.data)
     if (!frame) return
-    if (window.__sharesiesDebug) console.log('[sharesies frame]', frame.type, frame.payload?.length)
+    if (window.__sharesiesDebug) console.log('[joinin frame]', frame.type, frame.payload?.length)
     if (frame.type === FRAME.STDOUT || frame.type === FRAME.STDERR) {
       term.write(frame.payload)
     } else if (frame.type === FRAME.EXIT) {
       term.writeln('')
-      term.writeln('[sharesies] session ended (exit code ' + frame.payload + ')')
+      term.writeln('[joinin] session ended (exit code ' + frame.payload + ')')
       connected = false
       setStatus('Session ended', 'info')
     }

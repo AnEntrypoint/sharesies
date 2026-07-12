@@ -2,7 +2,7 @@
 // joined from a real Chromium tab over WebRTC, driven with real keystrokes.
 // Not part of `npm test` (needs a browser binary) — run manually.
 //
-// Known sandbox quirk (not a sharesies bug): on Windows, briefly spawning a
+// Known sandbox quirk (not a joinin bug): on Windows, briefly spawning a
 // PTY app changes the hosting process's console mode; running Playwright's
 // chromium.launch() afterward in that SAME process can then fail. If this
 // script crashes with no JS-catchable error right after "chromium.launch",

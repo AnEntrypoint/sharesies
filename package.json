@@ -1,22 +1,22 @@
 {
-  "name": "sharesies",
+  "name": "joinin",
   "version": "1.0.0",
   "description": "Realtime peer-to-peer shared TUI. Runs a single app in your terminal and lets friends connect over HyperDHT to see and type in the same session. No ports, no servers, no popups.",
   "type": "module",
   "main": "index.js",
   "module": "index.js",
   "bin": {
-    "sharesies": "sharesies.mjs"
+    "joinin": "joinin.mjs"
   },
   "files": [
-    "sharesies.mjs",
+    "joinin.mjs",
     "index.js",
     "src/*.js",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
-    "start": "node sharesies.mjs",
+    "start": "node joinin.mjs",
     "test": "node --test",
     "build:web": "node web/build.mjs",
     "dev:web": "node web/build.mjs --watch"
