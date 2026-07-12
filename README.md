@@ -93,6 +93,15 @@ seed is a single invite for both transports.
 `--web` is opt-in: plain `npx joinin <app>` stays HyperDHT-only with zero
 extra native dependencies pulled in at install/run time.
 
+> **`--web` needs a native binary.** The WebRTC transport uses
+> [node-datachannel](https://github.com/murat-dogan/node-datachannel), whose
+> prebuilt `.node` binary is fetched by its install script. If that step is
+> skipped or fails (occasionally happens on a brand-new Node release), `--web`
+> prints `failed to start RTC transport: Cannot find module ... node_datachannel.node`
+> and falls back to HyperDHT-only. Fix it by re-running the native install:
+> `npm rebuild node-datachannel` (or reinstall). The plain (non-`--web`) CLI
+> never needs this.
+
 **Privacy.** The GitHub Pages URL itself is public — anyone can load the page.
 What's private is the **session**: joining requires the invite seed, exactly
 like the CLI's `--connect <seed>`. The page never lists or discovers other
