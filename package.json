@@ -1,6 +1,6 @@
 {
   "name": "joinin",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Realtime peer-to-peer shared TUI. Runs a single app in your terminal and lets friends connect over HyperDHT to see and type in the same session. No ports, no servers, no popups.",
   "type": "module",
   "main": "index.js",
