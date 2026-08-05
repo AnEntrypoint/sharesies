@@ -41,7 +41,15 @@ export function wireRtcTransport(sharedSession, session, { onPeerOpen } = {}) {
   const clients = new Map()
 
   session.addEventListener('peer-open', (e) => {
+    // wireweave opens TWO data channels per peer (reliable + unreliable) and
+    // emits `peer-open` once for EACH as it opens. joinin multiplexes every
+    // logical stream over the reliable channel only, so it must register the
+    // peer as a SharedSession client exactly once — registering on both fires
+    // would add the same peer twice and double every byte the PTY echoes back.
+    // Ignore the unreliable channel's open, and guard against any duplicate.
+    if (e.detail.unreliable) return
     const peerPubkey = e.detail.peerPubkey
+    if (clients.has(peerPubkey)) return
     const client = makeRtcClient(peerPubkey, session)
     clients.set(peerPubkey, client)
     sharedSession.addClient(client)
@@ -49,6 +57,9 @@ export function wireRtcTransport(sharedSession, session, { onPeerOpen } = {}) {
   })
 
   session.addEventListener('peer-close', (e) => {
+    // Mirror peer-open: only the reliable channel's close tears down the
+    // client (the unreliable channel closing is not the peer leaving).
+    if (e.detail.unreliable) return
     const client = clients.get(e.detail.peerPubkey)
     if (client) {
       sharedSession.removeClient(client)
