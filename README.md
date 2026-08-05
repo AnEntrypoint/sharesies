@@ -98,9 +98,11 @@ extra native dependencies pulled in at install/run time.
 > prebuilt `.node` binary is fetched by its install script. If that step is
 > skipped or fails (occasionally happens on a brand-new Node release), `--web`
 > prints `failed to start RTC transport: Cannot find module ... node_datachannel.node`
-> and falls back to HyperDHT-only. Fix it by re-running the native install:
-> `npm rebuild node-datachannel` (or reinstall). The plain (non-`--web`) CLI
-> never needs this.
+> and falls back to HyperDHT-only. Fetch the prebuilt binary directly:
+> `cd node_modules/node-datachannel && npx prebuild-install -r napi`
+> (`npm rebuild node-datachannel` does **not** reliably re-fetch it on newer
+> Node versions — it reports success while producing no binary). The plain
+> (non-`--web`) CLI never needs this.
 
 **Privacy.** The GitHub Pages URL itself is public — anyone can load the page.
 What's private is the **session**: joining requires the invite seed, exactly

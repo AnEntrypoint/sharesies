@@ -13,3 +13,6 @@ web/bundle.js.map
 *.swp
 .gm/browser-profile/
 .gm/browser-profile-*/
+.gm/browser-chrome-profile-*/
+.agentplug-kv/
+*.stackdump
