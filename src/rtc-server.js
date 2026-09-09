@@ -42,7 +42,7 @@ export function wireRtcTransport(sharedSession, session, { onPeerOpen } = {}) {
 
   session.addEventListener('peer-open', (e) => {
     // wireweave opens TWO data channels per peer (reliable + unreliable) and
-    // emits `peer-open` once for EACH as it opens. joinin multiplexes every
+    // emits `peer-open` once for EACH as it opens. sharesies multiplexes every
     // logical stream over the reliable channel only, so it must register the
     // peer as a SharedSession client exactly once — registering on both fires
     // would add the same peer twice and double every byte the PTY echoes back.
