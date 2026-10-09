@@ -70,6 +70,28 @@ npx github:AnEntrypoint/sharesies <seed>
 
 `bunx github:AnEntrypoint/sharesies ...` is equivalent to `npx github:AnEntrypoint/sharesies ...`.
 
+#### Watch several sessions in one terminal
+
+Pass more than one seed and the client joins them all over a single shared
+DHT node, showing one at a time and buffering the rest in the background:
+
+```bash
+npx github:AnEntrypoint/sharesies --connect <seed-a> --connect <seed-b>
+```
+
+Press `Ctrl+]` and then:
+
+| Key | Action |
+| --- | --- |
+| `1`–`9` | jump to session N |
+| `n` / `p` | next / previous session |
+| `q` | detach from all sessions |
+| `Ctrl+]` | send a literal `Ctrl+]` to the app |
+
+The window title shows `sharesies <current>/<total>` and flags unseen output
+in background sessions. Switching replays the session's recent output (256 KiB)
+and asks the app to repaint.
+
 ### Running from a local clone
 
 ```bash

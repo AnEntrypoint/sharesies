@@ -24,9 +24,22 @@ const sessionMachine = createMachine({
   }
 })
 
+function quoteWindowsArg(arg) {
+  if (arg !== '' && !/[\s"]/.test(arg)) return arg
+  return '"' + arg.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\+)$/, '$1$1') + '"'
+}
+
+// libtt joins file + args on Windows without quoting, which drops arguments
+// and breaks paths containing spaces; hand it one correctly quoted command line.
+function ptyCommand({ command, args }) {
+  if (process.platform !== 'win32') return { file: command, args }
+  return { file: [command, ...args].map(quoteWindowsArg).join(' '), args: [] }
+}
+
 async function defaultPtyFactory(opts) {
   const PTY = (await import('tt-native')).default ?? (await import('tt-native'))
-  return PTY.spawn(opts.command, opts.args, {
+  const { file, args } = ptyCommand(opts)
+  return PTY.spawn(file, args, {
     cwd: opts.cwd,
     env: opts.env,
     width: opts.width,

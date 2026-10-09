@@ -61,14 +61,12 @@ class Backlog {
   }
 }
 
-async function connectSession(seed, { onStdout, onStderr, onExit }) {
+async function connectSession(node, seed, { onStdout, onStderr, onExit }) {
   const { handshakeSpawn, resize } = await getProtocol()
   const { buffer, uint } = (await import('compact-encoding')).default ?? (await import('compact-encoding'))
   const Protomux = (await import('protomux')).default ?? (await import('protomux'))
-  const DHT = (await import('hyperdht')).default ?? (await import('hyperdht'))
 
   const { keyPair } = await deriveKeyPair(seed)
-  const node = new DHT()
   const socket = node.connect(keyPair.publicKey, { keyPair })
 
   await once(socket, 'open')
@@ -82,7 +80,6 @@ async function connectSession(seed, { onStdout, onStderr, onExit }) {
     if (closed) return
     closed = true
     try { socket.end() } catch {}
-    try { node.destroy() } catch {}
     onExit(exitCode)
   }
 
@@ -130,6 +127,11 @@ export async function runClient(seeds) {
   const list = Array.isArray(seeds) ? seeds : [seeds]
   const multi = list.length > 1
 
+  // One DHT node serves every session: a single bootstrap and UDP socket
+  // instead of one of each per session.
+  const DHT = (await import('hyperdht')).default ?? (await import('hyperdht'))
+  const node = new DHT()
+
   const sessions = []
   let foreground = null
   let exiting = false
@@ -147,6 +149,7 @@ export async function runClient(seeds) {
     exiting = true
     try { restoreStdin() } catch {}
     for (const s of sessions) s.close()
+    try { node.destroy() } catch {}
     process.exit(code)
   }
 
@@ -195,7 +198,7 @@ export async function runClient(seeds) {
 
   const attach = async (seed) => {
     const entry = makeEntry(seed)
-    const session = await connectSession(seed, {
+    const session = await connectSession(node, seed, {
       onStdout: onOutput(entry),
       onStderr: (d) => process.stderr.write(d),
       onExit: (code) => removeSession(entry, code)
@@ -203,6 +206,7 @@ export async function runClient(seeds) {
     entry.session = session
     sessions.push(entry)
     if (!foreground) switchTo(0)
+    else setTitle()
     return entry
   }
 
