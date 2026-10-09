@@ -16,3 +16,4 @@ web/bundle.js.map
 .gm/browser-chrome-profile-*/
 .agentplug-kv/
 *.stackdump
+config.bat
