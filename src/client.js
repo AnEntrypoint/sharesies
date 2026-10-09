@@ -204,7 +204,10 @@ export async function runClient(seeds) {
       onExit: (code) => removeSession(entry, code)
     })
     entry.session = session
+    // Sessions connect in whatever order the network answers, but Ctrl+] 1..9
+    // and the initial foreground follow the order the seeds were given.
     sessions.push(entry)
+    sessions.sort((a, b) => list.indexOf(a.seed) - list.indexOf(b.seed))
     if (!foreground) switchTo(0)
     else setTitle()
     return entry
@@ -267,6 +270,8 @@ export async function runClient(seeds) {
   process.on('SIGINT', () => teardown(130))
 
   const results = await Promise.allSettled(list.map(attach))
+  // Once every attach has settled, the first seed on the command line is in front.
+  if (sessions.length) switchTo(0)
   const failed = results.filter((r) => r.status === 'rejected')
   if (failed.length === results.length) {
     throw failed[0].reason
