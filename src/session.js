@@ -29,11 +29,20 @@ function quoteWindowsArg(arg) {
   return '"' + arg.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\+)$/, '$1$1') + '"'
 }
 
+// libuv starts the child with setsid() but never makes the PTY its controlling
+// terminal. With no controlling terminal the PTY has no foreground process
+// group, so Ctrl+C is echoed as ^C and never becomes SIGINT: shared shells and
+// apps could not be interrupted. A session leader that opens its terminal
+// without O_NOCTTY acquires it, so reopen stdin by path, then exec the command.
+const CONTROLLING_TTY_PRELUDE = 'if T=$(tty 2>/dev/null); then exec 0<"$T"; fi; exec "$@"'
+
 // libtt joins file + args on Windows without quoting, which drops arguments
 // and breaks paths containing spaces; hand it one correctly quoted command line.
 function ptyCommand({ command, args }) {
-  if (process.platform !== 'win32') return { file: command, args }
-  return { file: [command, ...args].map(quoteWindowsArg).join(' '), args: [] }
+  if (process.platform === 'win32') {
+    return { file: [command, ...args].map(quoteWindowsArg).join(' '), args: [] }
+  }
+  return { file: 'sh', args: ['-c', CONTROLLING_TTY_PRELUDE, 'sharesies', command, ...args] }
 }
 
 async function defaultPtyFactory(opts) {

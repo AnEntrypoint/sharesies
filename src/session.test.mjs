@@ -138,3 +138,19 @@ test('app exit broadcasts exit code once and fires onAppExit exactly once', asyn
   assert.equal(a.channel.closed, true)
   assert.equal(b.channel.closed, true)
 })
+
+// Real PTY (no mock): Ctrl+C written by a client must interrupt the running
+// command, the same way it does in a local terminal.
+test('Ctrl+C from a client interrupts the running command in the shared PTY', { skip: process.platform === 'win32' }, async () => {
+  const session = new SharedSession({ command: 'sh', args: ['-c', 'sleep 300'], env: process.env, cwd: '/tmp' })
+  const exited = new Promise((resolve) => session.onAppExit(resolve))
+  await session.start()
+  await new Promise((resolve) => setTimeout(resolve, 1000))
+  session.write(Buffer.from([0x03]))
+  const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('command kept running after Ctrl+C')), 10000))
+  try {
+    await Promise.race([exited, timeout])
+  } finally {
+    session.destroy()
+  }
+})
