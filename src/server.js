@@ -1,16 +1,20 @@
 // Server side: run a single app in the current terminal and share it.
 //
-// `npx sharesies <app>` picks a fresh random seed, spawns THAT app directly
-// (no shell wrapper), mirrors it to your own terminal, and advertises the
-// session on HyperDHT. Every connecting friend joins the SAME session — they
-// see the same view and can type too. When the app exits the whole thing
-// closes. Pass `--shell` to share your login shell instead.
+// `npx github:AnEntrypoint/sharesies <app>` picks a fresh random seed, spawns
+// THAT app directly (no shell wrapper), mirrors it to your own terminal, and
+// advertises the session on HyperDHT. Every connecting friend joins the SAME
+// session — they see the same view and can type too. When the app exits the
+// whole thing closes. Pass `--shell` to share your login shell instead.
 
 import os from 'node:os'
 import { deriveKeyPair, randomSeed } from './keys.js'
 import { getProtocol } from './protocol.js'
 import { createSharedSession } from './session.js'
 import { attachRtcTransport } from './rtc-server.js'
+
+// The command a friend runs to join. sharesies is not on the npm registry (an
+// unrelated package named `sharesies` is), so invites must name the GitHub repo.
+export const RUN_COMMAND = 'npx github:AnEntrypoint/sharesies'
 
 export function defaultShell() {
   if (process.platform === 'win32') return process.env.COMSPEC || 'cmd.exe'
@@ -49,7 +53,10 @@ export async function runServer(opts = {}) {
     localTTY
   })
 
+  const sockets = new Set()
   server.on('connection', (socket) => {
+    sockets.add(socket)
+    socket.on('close', () => sockets.delete(socket))
     socket.on('error', (err) => {
       if (err.code !== 'ECONNRESET' && err.code !== 'ETIMEDOUT') console.error('connection error:', err.message)
     })
@@ -87,7 +94,7 @@ export async function runServer(opts = {}) {
   await server.listen(keyPair)
 
   const publicKey = HypercoreId.encode(keyPair.publicKey)
-  const showCommand = () => `npx sharesies --connect ${seed}`
+  const showCommand = () => `${RUN_COMMAND} --connect ${seed}`
 
   // Spawn the PTY only once every transport that should receive its initial
   // draw is ready to accept connections. A late-joining client only ever
@@ -143,9 +150,18 @@ export async function runServer(opts = {}) {
   async function shutdown(code = 0) {
     if (closed) return
     closed = true
+    if (localTTY && process.stdin.setRawMode) process.stdin.setRawMode(false)
     if (rtc) {
       await Promise.race([rtc.close(), new Promise((resolve) => setTimeout(resolve, 1500))]).catch(() => {})
     }
+    // End the client sockets cleanly so they see a close now, rather than
+    // waiting on a keepalive timeout after this process has gone.
+    for (const socket of sockets) {
+      try {
+        socket.end()
+      } catch {}
+    }
+    await new Promise((resolve) => setTimeout(resolve, 300))
     try {
       session.destroy()
     } catch {}
@@ -163,7 +179,16 @@ export async function runServer(opts = {}) {
   process.on('SIGTERM', () => shutdown(143))
 
   if (localTTY) {
-    process.stdin.on('data', (d) => session.write(d))
+    // Raw mode so each keystroke reaches the app immediately, instead of the
+    // terminal line-buffering it until Enter.
+    if (process.stdin.setRawMode) process.stdin.setRawMode(true)
+    process.stdin.on('data', (d) => {
+      // Ctrl+C closes sharesies (as the banner says), so it is not forwarded.
+      const i = d.indexOf(0x03)
+      if (i === -1) return session.write(d)
+      if (i > 0) session.write(d.subarray(0, i))
+      shutdown(130)
+    })
     process.stdout.on('resize', () => {
       session.resize(process.stdout.columns || 80, process.stdout.rows || 24)
     })

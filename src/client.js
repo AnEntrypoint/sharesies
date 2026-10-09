@@ -1,6 +1,6 @@
 // Client side: join one or more shared sessions created by friends.
 //
-// `npx sharesies --connect <seed> [<seed> ...]` derives the same keypair each
+// `npx github:AnEntrypoint/sharesies --connect <seed> [<seed> ...]` derives the same keypair each
 // server used, connects over HyperDHT, and mirrors the shared PTY into your
 // terminal. Your keystrokes go to whichever session is in the foreground.
 // Other sessions stay connected in the background, buffer their output, and
