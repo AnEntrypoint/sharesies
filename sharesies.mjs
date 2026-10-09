@@ -1,17 +1,18 @@
 #!/usr/bin/env node
+import { realpathSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
-import { runServer } from './src/server.js'
+import { runServer, RUN_COMMAND } from './src/server.js'
 import { runClient } from './src/client.js'
 
 const HELP = `sharesies — realtime shared TUI over HyperDHT
 
 SHARE A SPECIFIC APP (server, no flags needed — just name the app):
-  npx sharesies htop                 Share a specific app
-  npx sharesies vim                  Share another app
-  npx sharesies --app "vim -c help"  App with arguments
-  npx sharesies --shell             Share your login shell instead
-  npx sharesies --key <seed>        Use a fixed seed (stable invite)
-  npx sharesies --web <app>         Also reachable from a browser over WebRTC
+  ${RUN_COMMAND} htop                 Share a specific app
+  ${RUN_COMMAND} vim                  Share another app
+  ${RUN_COMMAND} --app "vim -c help"  App with arguments
+  ${RUN_COMMAND} --shell             Share your login shell instead
+  ${RUN_COMMAND} --key <seed>        Use a fixed seed (stable invite)
+  ${RUN_COMMAND} --web <app>         Also reachable from a browser over WebRTC
 
 WEBRTC NAT-TRAVERSAL TUNING (only with --web):
   --rtc-port-range <begin>-<end>    Pin ICE to a fixed UDP port range
@@ -25,9 +26,9 @@ WEBRTC NAT-TRAVERSAL TUNING (only with --web):
                                      networks that block direct UDP/TCP
 
 JOIN (client, give this to a friend):
-  npx sharesies --connect <seed>
-  npx sharesies <seed>              (same as above, if seed looks like a key)
-  npx sharesies --connect <a> --connect <b>
+  ${RUN_COMMAND} --connect <seed>
+  ${RUN_COMMAND} <seed>             (same as above, if seed looks like a key)
+  ${RUN_COMMAND} --connect <a> --connect <b>
                                     Join several sessions in one terminal and
                                     switch between them. Press Ctrl+] then:
                                       1-9    jump to session N
@@ -104,6 +105,10 @@ async function main() {
   }
 
   if (args.connect.length) {
+    if (args.connect.some((s) => !s)) {
+      process.stderr.write(`sharesies: --connect needs a seed, e.g.  ${RUN_COMMAND} --connect <seed>\n`)
+      process.exit(1)
+    }
     return await runClient(args.connect)
   }
 
@@ -134,11 +139,11 @@ async function main() {
 
   if (appParts.length === 0) {
     process.stderr.write('sharesies shares a specific app directly.\n\n')
-    process.stderr.write('  npx sharesies <app> [args...]     e.g.  npx sharesies htop\n')
-    process.stderr.write('  npx sharesies --app "vim -c help"\n')
-    process.stderr.write('  npx sharesies --shell             (share your login shell)\n')
-    process.stderr.write('  npx sharesies --web <app>         (also reachable from a browser)\n')
-    process.stderr.write('  npx sharesies --connect <seed>    (join a session)\n\n')
+    process.stderr.write(`  ${RUN_COMMAND} <app> [args...]     e.g.  ${RUN_COMMAND} htop\n`)
+    process.stderr.write(`  ${RUN_COMMAND} --app "vim -c help"\n`)
+    process.stderr.write(`  ${RUN_COMMAND} --shell             (share your login shell)\n`)
+    process.stderr.write(`  ${RUN_COMMAND} --web <app>         (also reachable from a browser)\n`)
+    process.stderr.write(`  ${RUN_COMMAND} --connect <seed>    (join a session)\n\n`)
     process.stderr.write('The named app runs in your terminal; when it exits, sharesies closes.\n')
     process.exit(1)
   }
@@ -149,9 +154,12 @@ async function main() {
   return await runServer({ seed: args.key || undefined, command, args: appArgs, ...rtcOpts })
 }
 
+// npx/bunx launch this file through a symlink in node_modules/.bin, while
+// import.meta.url is the resolved real path. Compare against the real path or
+// the CLI silently does nothing when run as a bin.
 const isMain = (() => {
   try {
-    return process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href
+    return process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href
   } catch {
     return false
   }
