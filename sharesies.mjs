@@ -27,6 +27,13 @@ WEBRTC NAT-TRAVERSAL TUNING (only with --web):
 JOIN (client, give this to a friend):
   npx sharesies --connect <seed>
   npx sharesies <seed>              (same as above, if seed looks like a key)
+  npx sharesies --connect <a> --connect <b>
+                                    Join several sessions in one terminal and
+                                    switch between them. Press Ctrl+] then:
+                                      1-9    jump to session N
+                                      n / p  next / previous session
+                                      q      detach from all sessions
+                                      Ctrl+] send a literal Ctrl+] to the app
 
 Notes:
   - You share ONE app directly — no terminal wrapper. When that app exits,
@@ -65,14 +72,14 @@ function parsePortRange(input) {
 
 function parseArgs(argv) {
   const out = {
-    connect: null, key: null, app: null, shell: false, web: false, webBase: null,
+    connect: [], key: null, app: null, shell: false, web: false, webBase: null,
     rtcPortRangeBegin: undefined, rtcPortRangeEnd: undefined, rtcUdpMux: false, rtcProxy: undefined,
     positionals: [], help: false
   }
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
     if (a === '--help' || a === '-h') out.help = true
-    else if (a === '--connect') out.connect = argv[++i]
+    else if (a === '--connect') out.connect.push(argv[++i])
     else if (a === '--key') out.key = argv[++i]
     else if (a === '--app') out.app = argv[++i]
     else if (a === '--shell') out.shell = true
@@ -96,17 +103,14 @@ async function main() {
     return
   }
 
-  if (args.connect) {
-    if (!args.connect) {
-      process.stderr.write('Error: --connect requires a seed\n')
-      process.exit(1)
-    }
+  if (args.connect.length) {
     return await runClient(args.connect)
   }
 
-  // A single hex-looking positional is treated as a connect seed.
-  if (args.positionals.length === 1 && /^[\da-fA-F]{16,}$/.test(args.positionals[0])) {
-    return await runClient(args.positionals[0])
+  // Positionals that all look like seeds are a connect request (one or more).
+  const isSeed = (s) => /^[\da-fA-F]{16,}$/.test(s)
+  if (args.positionals.length && args.positionals.every(isSeed)) {
+    return await runClient(args.positionals)
   }
 
   const rtcOpts = {

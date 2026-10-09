@@ -87,7 +87,7 @@ export async function runServer(opts = {}) {
   await server.listen(keyPair)
 
   const publicKey = HypercoreId.encode(keyPair.publicKey)
-  const showCommand = (c) => `npx sharesies --connect ${seed}`
+  const showCommand = () => `npx sharesies --connect ${seed}`
 
   // Spawn the PTY only once every transport that should receive its initial
   // draw is ready to accept connections. A late-joining client only ever
