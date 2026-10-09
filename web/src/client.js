@@ -57,7 +57,14 @@ async function joinSession(seed) {
     session.send(peerPubkey, encodeFrame(type, payload))
   }
 
+  // Other browser guests in the same room also become peers of ours. Only the
+  // host runs the terminal, so input and resizes go to the host peer alone; a
+  // guest peer would silently drop them. The host joins as 'host' (src/rtc-server.js),
+  // which wireweave records in participants under 'nostr-' + pubkey prefix.
+  const isHost = (pk) => session.participants.get('nostr-' + pk.slice(0, 12))?.identity === 'host'
+
   session.addEventListener('peer-open', (e) => {
+    if (e.detail.unreliable || !isHost(e.detail.peerPubkey)) return
     hostPeer = e.detail.peerPubkey
     connected = true
     setStatus('Connected', 'ok')
@@ -75,7 +82,8 @@ async function joinSession(seed) {
     }, 1000)
   })
 
-  session.addEventListener('peer-close', () => {
+  session.addEventListener('peer-close', (e) => {
+    if (e.detail.unreliable || e.detail.peerPubkey !== hostPeer) return
     connected = false
     setStatus('Disconnected — reconnecting…', 'warn')
   })
