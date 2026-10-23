@@ -121,8 +121,6 @@ export async function runServer(opts = {}) {
     }
   }
 
-  session.start()
-
   const webBase = opts.webBase || 'https://anentrypoint.github.io/sharesies/'
   const showWebUrl = () => `${webBase}#${seed}`
 
@@ -140,11 +138,18 @@ export async function runServer(opts = {}) {
     console.log('Or, from a browser (WebRTC, no install):')
     console.log('')
     console.log('  ' + showWebUrl())
+  } else if (opts.web) {
+    console.log('')
+    console.log('Browser access is unavailable (see the error above).')
   }
   console.log('')
   console.log('Anyone with that command sees the same screen and can type.')
   console.log('The session ends when the app exits. Ctrl+C closes sharesies.')
   console.log('')
+
+  // Start the app only after the join info is printed, so a full-screen app's
+  // first draw cannot scroll the links out of view.
+  session.start()
 
   let closed = false
   async function shutdown(code = 0) {
