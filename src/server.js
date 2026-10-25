@@ -103,6 +103,7 @@ export async function runServer(opts = {}) {
   // particular routinely takes seconds — would silently miss the app's
   // startup screen.
   let rtc = null
+  let rtcError = null
   if (opts.web) {
     try {
       rtc = await attachRtcTransport(session, {
@@ -117,7 +118,8 @@ export async function runServer(opts = {}) {
         }
       })
     } catch (err) {
-      console.error('sharesies: --web failed to start RTC transport: ' + (err && err.message ? err.message : err))
+      rtcError = err && err.message ? err.message : String(err)
+      console.error('sharesies: --web failed to start RTC transport: ' + rtcError)
     }
   }
 
@@ -140,7 +142,7 @@ export async function runServer(opts = {}) {
     console.log('  ' + showWebUrl())
   } else if (opts.web) {
     console.log('')
-    console.log('Browser access is unavailable (see the error above).')
+    console.log('Browser access is unavailable: ' + rtcError)
   }
   console.log('')
   console.log('Anyone with that command sees the same screen and can type.')

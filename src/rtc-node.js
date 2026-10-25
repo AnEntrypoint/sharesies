@@ -17,11 +17,46 @@
 // none of which the plain W3C polyfill surface exposes.
 
 import { createHash } from 'node:crypto'
+import { existsSync } from 'node:fs'
+import { spawn } from 'node:child_process'
+import { createRequire } from 'node:module'
+import path from 'node:path'
+
+const requireFromHere = createRequire(import.meta.url)
+
+// node-datachannel loads build/Release/node_datachannel.node, which its install
+// script downloads. npm blocks dependency install scripts unless the root project
+// approves them, and `npx github:` roots the install in a generated project that
+// approves nothing, so the binary is often missing. Fetch it here with the same
+// prebuild-install step the install script runs. ESM caches a failed import, so
+// this must run before node-datachannel is first imported.
+const PREBUILD_TIMEOUT_MS = 180_000
+
+export async function ensureNodeDatachannelBinary() {
+  const mainEntry = requireFromHere.resolve('node-datachannel')
+  const pkgDir = path.resolve(path.dirname(mainEntry), '../../..')
+  const addon = path.join(pkgDir, 'build', 'Release', 'node_datachannel.node')
+  if (existsSync(addon)) return
+  const prebuild = requireFromHere.resolve('prebuild-install/bin.js', { paths: [pkgDir] })
+  await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [prebuild, '-r', 'napi'], { cwd: pkgDir, stdio: ['ignore', 'ignore', 'pipe'] })
+    let stderr = ''
+    child.stderr.on('data', (chunk) => { stderr = (stderr + chunk).slice(-400) })
+    const timer = setTimeout(() => child.kill(), PREBUILD_TIMEOUT_MS)
+    child.on('error', (err) => { clearTimeout(timer); reject(err) })
+    child.on('exit', (code) => {
+      clearTimeout(timer)
+      if (code === 0 && existsSync(addon)) return resolve()
+      reject(new Error(`node-datachannel prebuilt binary download failed (exit ${code}): ${stderr.trim()}`))
+    })
+  })
+}
 
 let installed = false
 
 export async function installRtcGlobals() {
   if (installed) return
+  await ensureNodeDatachannelBinary()
   const { RTCPeerConnection, RTCSessionDescription, RTCIceCandidate } =
     (await import('node-datachannel/polyfill'))
   if (typeof globalThis.RTCPeerConnection === 'undefined') globalThis.RTCPeerConnection = RTCPeerConnection

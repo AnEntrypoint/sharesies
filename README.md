@@ -131,14 +131,13 @@ time.
 
 > **`--web` needs a native binary.** The WebRTC transport uses
 > [node-datachannel](https://github.com/murat-dogan/node-datachannel), whose
-> prebuilt `.node` binary is fetched by its install script. If that step is
-> skipped or fails (occasionally happens on a brand-new Node release), `--web`
-> prints `failed to start RTC transport: Cannot find module ... node_datachannel.node`
-> and falls back to HyperDHT-only. Fetch the prebuilt binary directly:
-> `cd node_modules/node-datachannel && npx prebuild-install -r napi`
-> (`npm rebuild node-datachannel` does **not** reliably re-fetch it on newer
-> Node versions — it reports success while producing no binary). The plain
-> (non-`--web`) CLI never needs this.
+> prebuilt `.node` binary its install script normally downloads. npm 12 skips
+> that script unless the root project approves it, and `npx github:` installs
+> have no such approval, so `--web` fetches the binary itself on first use
+> (the same `prebuild-install -r napi` step). If that download fails, the
+> startup banner says why and the join command still works over HyperDHT.
+> To fetch it by hand: `cd node_modules/node-datachannel && npx prebuild-install -r napi`.
+> The plain (non-`--web`) CLI never needs this.
 
 **Privacy.** The GitHub Pages URL itself is public — anyone can load the page.
 What's private is the **session**: joining requires the invite seed, exactly
