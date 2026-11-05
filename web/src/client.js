@@ -121,6 +121,13 @@ async function joinSession(seed) {
   })
   ro.observe(termEl)
 
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return
+    fitAddon.fit()
+    term.refresh(0, term.rows - 1)
+    if (connected && hostPeer) send(hostPeer, FRAME.RESIZE, { width: term.cols, height: term.rows })
+  })
+
   setStatus('Finding host…', 'info')
   await session.connect(roomId, { displayName: 'guest' })
 }
