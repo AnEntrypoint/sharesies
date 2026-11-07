@@ -17,3 +17,9 @@ web/bundle.js.map
 .agentplug-kv/
 *.stackdump
 config.bat
+.playwriter/
+.env
+.env.*
+.agentplug/
+__pycache__/
+*.pyc
